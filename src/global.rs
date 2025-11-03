@@ -1,17 +1,14 @@
-use std::sync::OnceLock;
+use std::sync::{LazyLock, Mutex, MutexGuard};
 
-use crate::pool::StringPool;
+use crate::{pool::StringPool, static_str::StaticString};
 
-static GLOBAL_STRING_POOL: OnceLock<StringPool> = OnceLock::new();
-
-// Load a [&'static str] to the StringPool.
-// Return None if the pool is uninit, otherwise return the new StaticStr back
-pub(crate) const fn new_static(s: &'static str) -> Option<&'static str> {
-    todo!()
-}
+type GlobalPool = Mutex<StringPool>;
+static GLOBAL_STRING_POOL: LazyLock<GlobalPool> = LazyLock::new(|| Mutex::new(StringPool::new()));
 
 // Copy a [&str] into the StringPool
-// Return None if the pool is uninit, otherwise return the
-pub(crate) fn make_static(s: &str) -> Option<&'static str> {
-    todo!()
+pub(crate) fn make_static(s: &str) -> StaticString {
+    let mut pool_guard: MutexGuard<'static, StringPool> =
+        GLOBAL_STRING_POOL.lock().expect("String pool poisoned");
+    let refr = pool_guard.store(s);
+    refr
 }
