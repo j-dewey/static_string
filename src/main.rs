@@ -1,3 +1,4 @@
+#![feature(lazy_get)]
 use crate::pstring::PooledString;
 
 mod global;
