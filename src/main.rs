@@ -1,8 +1,8 @@
-use crate::static_str::PooledString;
+use crate::pstring::PooledString;
 
 mod global;
 mod pool;
-mod static_str;
+mod pstring;
 
 const HELLO: PooledString = PooledString::from_static_str("Hello");
 

@@ -1,3 +1,4 @@
 mod global;
 mod pool;
-mod static_str;
+mod pstring;
+pub use pstring::PooledString;

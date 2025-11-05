@@ -5,7 +5,7 @@ use std::{
 
 use scc::HashMap;
 
-use crate::static_str::PooledString;
+use crate::pstring::PooledString;
 
 type StringHash = u64;
 

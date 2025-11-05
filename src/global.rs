@@ -1,6 +1,6 @@
 use std::sync::{LazyLock, Mutex, MutexGuard};
 
-use crate::{pool::StringPool, static_str::PooledString};
+use crate::{pool::StringPool, pstring::PooledString};
 
 type GlobalPool = Mutex<StringPool>;
 static GLOBAL_STRING_POOL: LazyLock<GlobalPool> = LazyLock::new(|| Mutex::new(StringPool::new()));
