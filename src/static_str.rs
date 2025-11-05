@@ -7,11 +7,11 @@ use crate::global;
 // to safely update the pool.
 //
 #[derive(Clone, Copy, Hash)]
-pub struct StaticString {
+pub struct PooledString {
     pub(crate) raw: &'static str,
 }
 
-impl StaticString {
+impl PooledString {
     // Create a StaticString from a [&'static str] without moving
     // or copying the string.
     //
@@ -27,7 +27,7 @@ impl StaticString {
     }
 }
 
-impl Display for StaticString {
+impl Display for PooledString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.raw.fmt(f)
     }

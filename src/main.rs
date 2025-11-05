@@ -1,13 +1,13 @@
-use crate::static_str::StaticString;
+use crate::static_str::PooledString;
 
 mod global;
 mod pool;
 mod static_str;
 
-const HELLO: StaticString = StaticString::from_static_str("Hello");
+const HELLO: PooledString = PooledString::from_static_str("Hello");
 
 fn main() {
     let string = " world!".to_owned();
-    let world = StaticString::from_str(&string[..]);
+    let world = PooledString::from_str(&string[..]);
     println!("{}{}", HELLO, world);
 }

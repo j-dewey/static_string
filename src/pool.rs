@@ -5,7 +5,7 @@ use std::{
 
 use scc::HashMap;
 
-use crate::static_str::StaticString;
+use crate::static_str::PooledString;
 
 type StringHash = u64;
 
@@ -52,7 +52,7 @@ impl StringPool {
         }
     }
 
-    pub fn store(&mut self, s: &str) -> StaticString {
+    pub fn store(&mut self, s: &str) -> PooledString {
         let boxed: Box<str> = Box::from(s);
         let hash = boxed.as_ptr() as usize;
 
@@ -68,6 +68,6 @@ impl StringPool {
         .expect("Failed to get static string after insertion into hash map");
         let string = entry.get();
 
-        StaticString { raw: string.raw }
+        PooledString { raw: string.raw }
     }
 }
