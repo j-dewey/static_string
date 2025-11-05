@@ -1,17 +1,12 @@
-use std::{
-    hash::{BuildHasher, Hash, Hasher, RandomState},
-    sync::atomic::AtomicUsize,
-};
+use std::{hash::Hash, sync::atomic::AtomicUsize};
 
 use scc::HashMap;
 
 use crate::pstring::PooledString;
 
-type StringHash = u64;
-
 #[derive(Debug)]
 pub(crate) struct StrEntry {
-    count: AtomicUsize,
+    _count: AtomicUsize,
     raw: &'static str,
 }
 
@@ -57,7 +52,7 @@ impl StringPool {
         let hash = boxed.as_ptr() as usize;
 
         let entry = StrEntry {
-            count: AtomicUsize::new(1),
+            _count: AtomicUsize::new(1),
             raw: Box::leak(boxed),
         };
 
