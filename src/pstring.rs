@@ -6,7 +6,7 @@ use crate::global;
 // Whenever a new StaticStr is made, it will use the methods in `global.rs`
 // to safely update the pool.
 //
-#[derive(Clone, Copy, Hash, std::fmt::Debug)]
+#[derive(Hash, std::fmt::Debug)]
 pub struct PooledString {
     pub(crate) raw: &'static str,
 }
@@ -24,6 +24,16 @@ impl PooledString {
     // slice into the static hashmap.
     pub fn from_str(s: &str) -> Self {
         global::make_static(s)
+    }
+
+    pub fn as_str<'a>(&'a self) -> &'a str {
+        self.raw
+    }
+}
+
+impl Clone for PooledString {
+    fn clone(&self) -> Self {
+        global::clone_pstring(self)
     }
 }
 
