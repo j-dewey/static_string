@@ -3,12 +3,14 @@ use std::fmt::Display;
 use crate::global;
 
 // This will be the primary interface for interacting with the pool.
-// Whenever a new StaticStr is made, it will use the methods in `global.rs`
+// Whenever a new PooledString is made, it will use the methods in `global.rs`
 // to safely update the pool.
-//
 #[derive(Hash, std::fmt::Debug)]
 pub struct PooledString {
     pub(crate) raw: &'static str,
+    // Was this string made from a real static ptr
+    // or is it stored in the pool?
+    pub(crate) true_static: bool,
 }
 
 impl PooledString {
@@ -17,7 +19,10 @@ impl PooledString {
     //
     // NOTE: Since s is stored in static memory, it's readonly
     pub const fn from_static_str(s: &'static str) -> Self {
-        Self { raw: s }
+        Self {
+            raw: s,
+            true_static: true,
+        }
     }
 
     // Create a StaticString from any [&str]. This will clone the

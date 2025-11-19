@@ -3,7 +3,7 @@
 // behave as expected
 //
 
-use static_string::PooledString;
+use static_string::{PooledString, is_pool_init};
 
 const DYNAMIC_STRING: &'static str = "dynamic string";
 
@@ -11,7 +11,8 @@ const DYNAMIC_STRING: &'static str = "dynamic string";
 fn alloc_dynamic() {
     let initial_string = String::from(DYNAMIC_STRING);
     let pooled = PooledString::from_str(&initial_string);
-    assert_eq!(pooled, *initial_string);
+    assert_eq!(pooled, *DYNAMIC_STRING);
+    assert!(is_pool_init());
 }
 
 #[test]
@@ -22,5 +23,6 @@ fn is_moveable() {
     }
 
     let pooled = make_pooled();
-    assert_eq!(pooled, *DYNAMIC_STRING)
+    assert_eq!(pooled, *DYNAMIC_STRING);
+    assert!(is_pool_init());
 }

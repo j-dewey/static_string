@@ -1,13 +1,28 @@
-use std::{hash::Hash, sync::atomic::AtomicUsize};
-
-use scc::HashMap;
+use std::{collections::HashMap, hash::Hash, sync::atomic::AtomicUsize};
 
 use crate::pstring::PooledString;
 
+// ----------------------------
+// | entry 1 | entry 2 | .... |
+// ----------------------------
+//  <---String 1--->   <-------String 2------->   ....
+// -----------------------------------------------------
+// | char 1 | char 2 | char 3 | char 4 | char 5 | .... |
+// -----------------------------------------------------
+
+// SAFETY:
+//      This function moves ownership of s, so this should not be called on
+//      any str that is really owned by another object. Also, the str should not
+//      really be static otherwise this will cause a segfault / UB
+unsafe fn drop_leaked_string(s: *mut u8, len: usize, cap: usize) {
+    let _ = unsafe { String::from_raw_parts(s as *mut u8, len, cap) };
+}
+
 #[derive(Debug)]
 pub(crate) struct StrEntry {
-    _count: AtomicUsize,
     raw: &'static str,
+    cap: usize,
+    count: AtomicUsize,
 }
 
 impl PartialEq for StrEntry {
@@ -37,7 +52,7 @@ impl Hash for StrEntry {
 }
 
 pub(crate) struct StringPool {
-    heap_strings: HashMap<usize, StrEntry>,
+    heap_strings: HashMap<&'static str, StrEntry>,
 }
 
 impl StringPool {
@@ -47,22 +62,47 @@ impl StringPool {
         }
     }
 
-    pub fn store(&mut self, s: &str) -> PooledString {
-        let boxed: Box<str> = Box::from(s);
-        let hash = boxed.as_ptr() as usize;
+    // Move a string into the pool and get a reference to the stored string
+    // if the string is already stored, the reference is still returned
+    pub fn store(&mut self, string: &str) -> PooledString {
+        let string = String::from(string);
+        let str_cap = string.capacity(); // may have access to more memory than the length
+        let leaked: &mut str = Box::leak(Box::from(string));
 
-        let entry = StrEntry {
-            _count: AtomicUsize::new(1),
-            raw: Box::leak(boxed),
+        let string = match self.heap_strings.get(leaked) {
+            Some(s) => {
+                // (leaked) isn't being tracked anymore, so need to reclaim the memory to avoid
+                // a memory leak
+                // SAFETY:
+                //      The region owned by leaked was first owned by string, however string never
+                //      had its destructor called. Since that region was owned by a String, it must be
+                //      allocated on the heap.
+                unsafe { drop_leaked_string(leaked.as_mut_ptr(), leaked.len(), str_cap) };
+                s
+            }
+            None => {
+                let entry = StrEntry {
+                    raw: leaked,
+                    cap: str_cap,
+                    count: AtomicUsize::new(1),
+                };
+                self.heap_strings.insert(leaked, entry);
+                self.heap_strings
+                    .get(leaked)
+                    .expect("Unexecpectedly removed string from pool during string storage")
+            }
         };
 
-        let entry = match self.heap_strings.insert_sync(hash, entry) {
-            Ok(()) => self.heap_strings.get_sync(&hash),
-            Err(_) => self.heap_strings.get_sync(&hash),
+        PooledString {
+            raw: string.raw,
+            true_static: false,
         }
-        .expect("Failed to get static string after insertion into hash map");
-        let string = entry.get();
+    }
 
-        PooledString { raw: string.raw }
+    // Create a clone of a pooled string that was pooled already
+    //  i.e. s.true_static == false
+    pub fn clone_pooled(&mut self, s: &PooledString) -> PooledString {
+        todo!()
+        //let ent = self.heap_strings.get(s.as_str());
     }
 }
