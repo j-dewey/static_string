@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    hash::Hash,
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use std::{collections::HashMap, hash::Hash, sync::atomic::AtomicUsize};
 
 use crate::pstring::PooledString;
 
@@ -105,14 +101,8 @@ impl StringPool {
 
     // Create a clone of a pooled string that was pooled already
     //  i.e. s.true_static == false
-    pub fn clone_pooled(&mut self, s: &PooledString) -> Option<PooledString> {
-        let ent = self.heap_strings.get_mut(s.as_str())?;
-        // The pool is behind a lock anyway, so ordering doesn't need to be considered until
-        // that is changed
-        ent.count.fetch_add(1, Ordering::Relaxed);
-        Some(PooledString {
-            raw: ent.raw,
-            true_static: false,
-        })
+    pub fn clone_pooled(&mut self, s: &PooledString) -> PooledString {
+        todo!()
+        //let ent = self.heap_strings.get(s.as_str());
     }
 }
