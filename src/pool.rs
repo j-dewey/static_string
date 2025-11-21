@@ -6,26 +6,9 @@ use std::{
 
 use crate::pstring::PooledString;
 
-// ----------------------------
-// | entry 1 | entry 2 | .... |
-// ----------------------------
-//  <---String 1--->   <-------String 2------->   ....
-// -----------------------------------------------------
-// | char 1 | char 2 | char 3 | char 4 | char 5 | .... |
-// -----------------------------------------------------
-
-// SAFETY:
-//      This function moves ownership of s, so this should not be called on
-//      any str that is really owned by another object. Also, the str should not
-//      really be static otherwise this will cause a segfault / UB
-unsafe fn drop_leaked_string(s: *mut u8, len: usize, cap: usize) {
-    let _ = unsafe { String::from_raw_parts(s as *mut u8, len, cap) };
-}
-
 #[derive(Debug)]
 pub(crate) struct StrEntry {
     raw: &'static str,
-    cap: usize,
     count: AtomicUsize,
 }
 
@@ -70,26 +53,16 @@ impl StringPool {
     // if the string is already stored, the reference is still returned
     pub fn store(&mut self, string: &str) -> PooledString {
         let string = String::from(string);
-        let str_cap = string.capacity(); // may have access to more memory than the length
-        let leaked: &mut str = Box::leak(Box::from(string));
 
-        let string = match self.heap_strings.get(leaked) {
-            Some(s) => {
-                // (leaked) isn't being tracked anymore, so need to reclaim the memory to avoid
-                // a memory leak
-                // SAFETY:
-                //      The region owned by leaked was first owned by string, however string never
-                //      had its destructor called. Since that region was owned by a String, it must be
-                //      allocated on the heap.
-                unsafe { drop_leaked_string(leaked.as_mut_ptr(), leaked.len(), str_cap) };
-                s
-            }
+        let pooled = match self.heap_strings.get(string.as_str()) {
+            Some(s) => s,
             None => {
+                let leaked: &mut str = Box::leak(Box::from(string));
                 let entry = StrEntry {
                     raw: leaked,
-                    cap: str_cap,
                     count: AtomicUsize::new(1),
                 };
+
                 self.heap_strings.insert(leaked, entry);
                 self.heap_strings
                     .get(leaked)
@@ -98,7 +71,7 @@ impl StringPool {
         };
 
         PooledString {
-            raw: string.raw,
+            raw: pooled.raw,
             true_static: false,
         }
     }
