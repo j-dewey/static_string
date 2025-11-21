@@ -30,5 +30,7 @@ pub(crate) fn clone_pstring(s: &PooledString) -> PooledString {
     let mut pool_guard: MutexGuard<'static, StringPool> =
         GLOBAL_STRING_POOL.lock().expect("String pool poisoned");
 
-    pool_guard.clone_pooled(s)
+    pool_guard
+        .clone_pooled(s)
+        .expect("Pooled String not found in string pool during clone")
 }
